@@ -1,0 +1,164 @@
+---
+title: "COVID-19 Cases in Toronto"
+subtitle: "Exploring epidemic impacts among different age groups"
+author: "Yingying Zhou"
+thanks: "Code and data are available at: https://github.com/StephaininZ/open_data_toronto_covid19."
+date: "`r format(Sys.time(), '%d %B %Y')`"
+abstract: "The novel coronavirus has been around for over a year; 2020 witnessed an ongoing global epidemic that has cost countless lives and jobs and systematically disrupted the development of human society in almost every aspect. Taking the Toronto data as one sampled data point from many of the global epicenters, this paper intends to conduct a case study on COVID-19. More specifically, the study investigates the epidemic impacts of COVID-19 on people from different age groups in order to inform the general public of its risk to further educate them for better precautions in disease prevention."
+output:
+  bookdown::pdf_document2:
+toc: FALSE
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(kableExtra)
+library(ggplot2)
+```
+
+# Introduction
+When lockdowns and quarantine orders become part of the city regulation rules, masks worn as one of the outfit essentials, and vaccines deemed worth lining for, Torontonians know their public health system and personal safety are being challenged by the COVID-19 virus, just like almost any other cities in the world.
+The following section will anatomize Toronto COVID-19 data from the aspect of structure and content. Description on data source, bias, and dataset outlines the problem framework, followed by analysis of epidemic impacts of COVID-19 on different age groups in transmission sources and illness risks (hospitalization and fatality). 
+
+
+# Data
+## Source of data 
+The dataset `COVID-19 Cases in Toronto` [@coviddata] is retrieved from Open Data Toronto via the API using the package `opendatatoronto` [@opendatatrt]. It is published by Toronto Public Health and refreshed on a weekly basis. 
+
+
+## Bias in data
+The dataset might have ethical and statistical problems. On one hand, sensitive features such as gender, age and FSA postal code are included in the dataset. Potential threats would be posed on personal privacy once those sensitive features are reverse engineered to infer individual private attributes. On the other hand, the case numbers might be undercounted. It is possible that asymptomatic carriers did not get tested because they do not feel unwell or show any suspected symptoms. Human bias in respondent’s answer and lags in data entry also cause some answers in source of infection missing and outcome data for resolved cases to be underreported. 
+
+
+## Snapshot of COVID-19 Situation in Toronto
+The original dataset contains 77,872 observations of COVID-19 cases in Toronto from the inception of the pandemic outbreak, Jan 23rd, 2020 to present. There are 18 features including demographic and geographic information (case ID, patient’s age group, gender, neighbourhood, FSA postal code, etc.), case-related diagnosis (source of infection, diagnosis classification, episode date, reported date, case outcome) and records of hospitalization indicating whether the patient is or has ever been hospitalized/in ICU/intubated. 
+
+1. `_id`: Unique row identifier for Open Data database
+2. `Assigned_ID`: A unique ID assigned to cases
+3. `Outbreak Associated`: Outbreak associated cases are associated with outbreaks of COVID-19 in Toronto healthcare institutions and healthcare settings and congregate settings.
+4. `Age Group`
+5. `Neighbourhood Name`
+6. `FSA`: first three characters of postal code
+7. `Source of Infection`: Travel; Close contact with a case; Institutional; Healthcare; Community; Pending; Unknown/missing; N/A
+8. `Classification`: categorize the cases as confirmed or probable
+9. `Episode Date`: best estimates when the disease was acquired
+10. `Reported Date`: The date on which the case was reported to Toronto Public Health
+11. `Client Gender`
+12. `Outcome`: Fatal; Resolved; Active
+13. `Currently Hospitalized`
+14. `Currently in ICU`
+15. `Currently Intubated`
+16. `Ever Hospitalized`: Cases that were hospitalized, admitted to ICU, intubated related to their COVID-19 infection (includes cases that are currently hospitalized and those that have been discharged or are deceased)
+17. `Ever in ICU`
+18. `Ever Intubated`
+
+
+For the purpose of exploration of the novel coronavirus effect on different age groups, only the variables `Age Group`, `Classification` (filtered to be `CONFIRMED`), `Source of Infection`, `Reported Date`, `Ever_Hospitalized`, and `Outcome` are selected, cleaned with package `janitor` [@citejanitor] and `tidyverse` [@citetidyverse], and constructed into a new dataframe called `covid_toronto` using package `kableExtra` [@kable]. Graphs are plotted with `ggplot2` [@ggplot2].
+
+
+```{r totals, fig.cap="Toronto COVID-19 Total Cases for 2020-2021", echo = FALSE, message=FALSE, fig.pos="H"}
+covid_toronto <- read_csv(here::here('inputs/data/cleaned_data.csv'))
+covid_toronto %>%
+  count(Year, classification) %>%
+  rename(Number=n) %>% 
+  kableExtra::kbl(caption = "Toronto COVID-19 Cases by year for 2020-2021") %>%
+  kableExtra::kable_styling()
+```
+As shown in the table (Table \@ref(tab:totals)), 2020 has witnessed 63,208 COVID-19 confirmed or probable cases in Toronto, but January 2021 alone reports 14764 cases, accounting for about 23.4% of total cases in 2020. 
+
+
+```{r fatal, fig.cap="Toronto COVID-19 Fatality Rate by Month", echo = FALSE, fig.pos="H"}
+covid_toronto %>% 
+  filter(classification =="CONFIRMED" & outcome == "FATAL") %>%
+  group_by(Month) %>%
+  tally %>% 
+  mutate(Fatality_Rate = n/sum(n)) %>%
+  rename(Number=n) %>%
+  kableExtra::kbl(caption = "Toronto COVID-19 Fatality Rate by Month") %>%
+  kableExtra::kable_styling()
+```
+As for the fatality rate (Table \@ref(tab:fatal)), April has the highest rate of 36.79%, followed by November (15.86%) and May (14.67%). 
+
+
+```{r ages, fig.cap="Proportion of Monthly COVID-19 Cases by Age Group", echo = FALSE, fig.width=8, fig.height=5, fig.pos="H"}
+prop_age <- covid_toronto %>% 
+  group_by(Month, age_group) %>%
+  tally %>% 
+  mutate(prop=n/sum(n))
+
+prop_age %>% 
+  ggplot(aes(x = age_group, y = prop, fill=age_group)) +
+  geom_bar(stat = "identity", position="dodge") +
+  facet_wrap(~Month) +
+  theme_minimal() + 
+  labs(x="Age", y="Proportion") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle("Proportion of Monthly COVID-19 Cases by Age Group")
+```
+Among the confirmed cases (Figure \@ref(fig:ages)), young people aged between 20 to 39 years old are the two majority groups, totalling around 35% every month. At first sight, this finding seems counter-intuitive since according to the World Health Organization (WHO) [@citeWHO] that “Older people are at highest risk from COVID-19”, especially aged above 85. 
+
+But a closer analysis on source of infection, hospitalization and fatality cases would verify the correctness of WHO’s statement. 
+
+### Source of Infection
+
+```{r sources, fig.cap="Monthly Confirmed Cases by Source of Infection", echo = FALSE, fig.width=8, fig.height=4, fig.pos="H"}
+covid_toronto %>%
+  filter(classification == "CONFIRMED") %>%
+  filter(source_of_infection != "Unknown/Missing") %>%
+  count(Month, source_of_infection) %>%
+  ggplot(aes(x=Month, y=n, fill=source_of_infection)) +
+  geom_bar(stat="identity", position="Dodge") +
+  theme_minimal() + 
+  labs(x="Month", y="Number") +
+  ggtitle("Monthly Confirmed Cases by Source of Infection")
+```
+
+Except for February when all 6 cases resulted from overseas traveling, the top 2 frequent causes of infection (Figure \@ref(fig:sources)) are close contact and community, excluding unknown or missing sources. Young people tend to engage in more social activities such as partying and clubbing. Assuming same level of susceptibility, their frequent practice in social gatherings expose them to higher chances of virus infections. Thereby, it largely accounts for why young people are the majority group in COVID-19 cases.
+
+
+### Hospitalization and Fatality
+
+```{r risk, fig.cap="Monthly Hospitalization & Fatality Rate by Age Group", echo = FALSE, fig.width=8, fig.height=4, fig.pos="H"}
+# FATALITY and HOSPITALIZATION RATE BY AGE GROUP
+covid_toronto %>%
+  filter(outcome == "FATAL" & ever_hospitalized=="Yes") %>%
+  count(Month, age_group) %>%
+  ggplot(aes(x = Month, y=n, fill=age_group)) +
+  geom_bar(stat="identity", position="fill") +
+  theme_minimal() + 
+  labs(x="Age", y="Proportion") +
+  ggtitle("Monthly Hospitalization & Fatality Rate by Age Group")
+```
+
+Older people, especially aged above 80 top the list for hospitalization-fatality rates every month, together they take up more than 60% of the death cases after hospitalization. It reveals a concerning fact that once older people are diagnosed with COVID-19, they might suffer from severe COVID-19 symptoms. In other words, even if they are hospitalized to receive medical treatment, their chances of recovery are still dismal. 
+
+
+# Results
+
+```{r totalcases, fig.cap="Total Confirmed COVID-19 Cases by Outcome and Age Group", echo = FALSE, fig.width=8, fig.height=4, fig.pos="H"}
+covid_toronto %>%
+  filter(classification == "CONFIRMED") %>%
+  filter(age_group != "NA") %>%
+  count(age_group, outcome) %>%
+  ggplot(aes(x=age_group, y=n, fill=outcome)) +
+  geom_bar(stat="identity", position="Dodge") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x="Age Group", y="Number") +
+  ggtitle("Total Confirmed COVID-19 Cases by Outcome and Age Group")
+```
+
+In conclusion, although young people are the major victims of the pandemic in terms of total cases in Toronto, it is the older people who bear the higher chance of serve illness once confirmed of COVID-19. As shown in the graph (Figure \@ref(fig:totalcases)), The distribution of fatal cases concentrates around age group 60-69, 70-79, 80-89, and over 90s. From 2020 to present, there are more fatal cases among older Torontonians aged above 60 in total. 
+
+Therefore, our findings echo with another CDC’s report that “older people are at a greater risk of requiring hospitalization or dying” [@CDC].
+During this critical time of second wave, this paper urges that every resident in Toronto should perform their duty in obeying the 'stay-home order'. Eventually, chances of COVID-19 infection and transmissions would be minimized and the curve will be flattened sooner.
+
+\newpage
+# References
+
+
