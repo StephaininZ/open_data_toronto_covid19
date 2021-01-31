@@ -14,6 +14,7 @@ bibliography: references.bib
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+#### Load libraries ####
 library(tidyverse)
 library(here)
 library(kableExtra)
@@ -100,6 +101,7 @@ prop_age %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   ggtitle("Proportion of Monthly COVID-19 Cases by Age Group")
 ```
+
 Among the confirmed cases (Figure \@ref(fig:ages)), young people aged between 20 to 39 years old are the two majority groups, totalling around 35% every month. At first sight, this finding seems counter-intuitive since according to the World Health Organization (WHO) [@citeWHO] that “Older people are at highest risk from COVID-19”, especially aged above 85. 
 
 But a closer analysis on source of infection, hospitalization and fatality cases would verify the correctness of WHO’s statement. 
@@ -135,7 +137,7 @@ covid_toronto %>%
   ggtitle("Monthly Hospitalization & Fatality Rate by Age Group")
 ```
 
-Older people, especially aged above 80 top the list for hospitalization-fatality rates every month, together they take up more than 60% of the death cases after hospitalization. It reveals a concerning fact that once older people are diagnosed with COVID-19, they might suffer from severe COVID-19 symptoms. In other words, even if they are hospitalized to receive medical treatment, their chances of recovery are still dismal. 
+Older people, especially aged above 80 top the list for hospitalization-fatality rates every month, together they take up more than 60% (Figure \@ref(fig:risk)) of the death cases after hospitalization. It reveals a concerning fact that once older people are diagnosed with COVID-19, they might suffer from severe COVID-19 symptoms. In other words, even if they are hospitalized to receive medical treatment, their chances of recovery are still dismal. 
 
 
 # Results
@@ -158,7 +160,7 @@ In conclusion, although young people are the major victims of the pandemic in te
 Therefore, our findings echo with another CDC’s report that “older people are at a greater risk of requiring hospitalization or dying” [@CDC].
 During this critical time of second wave, this paper urges that every resident in Toronto should perform their duty in obeying the 'stay-home order'. Eventually, chances of COVID-19 infection and transmissions would be minimized and the curve will be flattened sooner.
 
-\newpage
+
 # References
 
 
